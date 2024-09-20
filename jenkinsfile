@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+    stages {
+        stage('SonarQube Scan') {
+            steps {
+                sh 'docker build -t sonar -f Dockerfile .'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh './mvnw package'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def buildNumber = env.BUILD_NUMBER
+                    sh "docker build -t bshara745/spring-petclinic/spring-petclinic:latest ."
+                    sh "docker build -t bshara745/spring-petclinic/spring-petclinic:${buildNumber} ."
+                    sh "docker push bshara745/spring-petclinic/spring-petclinic:latest"
+                    sh "docker push bshara745/spring-petclinic/spring-petclinic:${buildNumber}"
+                }
+            }
+        }
+    }
+}
