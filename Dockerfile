@@ -1,0 +1,34 @@
+# Step 1: Run Sonar Qube (  
+FROM sonarsource/sonar-scanner-cli:latest AS sonarqube-scan
+
+# Copy source code to image
+WORKDIR /app
+COPY . .
+
+#(Sonar Qube already  working and  installed on my machien * used docker image to install it and verfied it's working - and extracted my Login token  )
+ENV SONAR_HOST_URL=http://localhost:9000
+ENV SONAR_LOGIN=squ_ec5b9297072e2a6cc8e285c6dcd6f5e06b90ac39
+RUN sonar-scanner   -Dsonar.projectKey=my_project_key   -Dsonar.sources=.   -Dsonar.host.url=   -Dsonar.login= || echo SonarQube analysis finished with issues 
+
+
+
+
+# Step 2: Build the Maven project
+# i have used so many versions of maven till I foung this one and it worked for me 
+FROM maven:3.8.6-eclipse-temurin-17 AS build
+# seting the workinf Dir 
+WORKDIR /app
+# copyied the source code to the container
+COPY . .
+RUN ./mvnw package
+
+
+
+# Step 3: Create the final image with Java 8 and use the JAR file as CMD
+FROM openjdk:8-jdk-alpine
+WORKDIR /code
+
+# Copy the artifact from the Maven build (Step 2)
+COPY --from=build /app/target/*.jar /code/
+CMD [java, -jar, /code/*.jar]
+
