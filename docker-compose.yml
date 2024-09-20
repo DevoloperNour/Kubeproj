@@ -1,25 +1,33 @@
+version: '3.8'
+
 services:
-  mysql:
-    image: mysql:8.4
+  # Jenkins Master
+  jenkins-master:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-master
     ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=
-      - MYSQL_ALLOW_EMPTY_PASSWORD=true
-      - MYSQL_USER=petclinic
-      - MYSQL_PASSWORD=petclinic
-      - MYSQL_DATABASE=petclinic
+      - 8080:8080      # Jenkins Web UI
+      - 50000:50000    # JNLP port for agents
     volumes:
-      - "./conf.d:/etc/mysql/conf.d:ro"
-    profiles:
-      - mysql
-  postgres:
-    image: postgres:16.3
-    ports:
-      - "5432:5432"
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # Allow Jenkins to run Docker builds
     environment:
-      - POSTGRES_PASSWORD=petclinic
-      - POSTGRES_USER=petclinic
-      - POSTGRES_DB=petclinic
-    profiles:
-      - postgres
+      JENKINS_SLAVE_AGENT_PORT: 50000
+
+  # Jenkins Slave (Agent)
+  jenkins-agent:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent
+    environment:
+      - JENKINS_URL=http://jenkins-master:8080
+      - JENKINS_AGENT_NAME=agent-1
+      - JENKINS_SECRET=<TO-BE-REPLACED>
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - jenkins-master
+
+volumes:
+  jenkins_home:
+
