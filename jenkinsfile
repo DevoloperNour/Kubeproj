@@ -1,26 +1,95 @@
 pipeline {
     agent any
+
+    environment {
+        DOCKER_CREDENTIALS_ID = 'git-pass'
+        DOCKERHUB_REPO = 'DevoloperNour/spring-petclinic'
+        GIT_REPO = 'https://github.com/DevoloperNour/Kubeproj.git'
+    }
+
     stages {
-        stage('SonarQube Scan') {
+        stage('Checkout Code') {
             steps {
-                sh 'docker build -t sonar -f Dockerfile .'
+                // Checkout the project from your Git repository
+                git branch: 'main', url: "${env.GIT_REPO}"
             }
         }
-        stage('Build') {
+        
+       stage('SonarQube Scan') {
             steps {
+                echo 'Running SonarQube Scan...'
+                withSonarQubeEnv('SonarQube Scanner') { // The name you gave to SonarQube in Jenkins settings
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=spring-petclinic \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN}
+            }
+        }
+        
+        stage('Build Application') {
+            steps {
+                // Use the Dockerfile to build the application inside Jenkins
+                echo 'Building Application...'
                 sh './mvnw package'
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     def buildNumber = env.BUILD_NUMBER
-                    sh "docker build -t bshara745/spring-petclinic/spring-petclinic:latest ."
-                    sh "docker build -t bshara745/spring-petclinic/spring-petclinic:${buildNumber} ."
-                    sh "docker push bshara745/spring-petclinic/spring-petclinic:latest"
-                    sh "docker push bshara745/spring-petclinic/spring-petclinic:${buildNumber}"
+                    def imageName = "${DOCKERHUB_REPO}"
+
+                    echo "Building Docker Image..."
+                    sh """
+                        docker build -t ${imageName}:latest .
+                        docker tag ${imageName}:latest ${imageName}:${buildNumber}
+                    """
                 }
             }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    def buildNumber = env.BUILD_NUMBER
+                    def imageName = "${DOCKERHUB_REPO}"
+
+                    echo "Pushing Docker Image to Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh """
+                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                            docker push ${imageName}:latest
+                            docker push ${imageName}:${buildNumber}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes via Helm') {
+            steps {
+                echo 'Deploying to Kubernetes using Helm...'
+                // This assumes that your Kubernetes cluster and Helm are pre-configured in Jenkins
+                sh """
+                    helm upgrade --install spring-petclinic ./spring-petclinic-chart --set image.repository=${DOCKERHUB_REPO},image.tag=latest
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up Docker images...'
+            sh 'docker rmi $(docker images -f "dangling=true" -q) || true'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed. Please check logs.'
         }
     }
 }
