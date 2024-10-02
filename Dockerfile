@@ -1,34 +1,38 @@
-# Step 1: Run Sonar Qube (  
+# Step 1: Run SonarQube scan (assuming SonarQube is required and running locally)
 FROM sonarsource/sonar-scanner-cli:latest AS sonarqube-scan
 
-# Copy source code to image
 WORKDIR /app
 COPY . .
 
-#(Sonar Qube already  working and  installed on my machien * used docker image to install it and verfied it's working - and extracted my Login token  )
 ENV SONAR_HOST_URL=http://localhost:9000
 ENV SONAR_LOGIN=squ_ec5b9297072e2a6cc8e285c6dcd6f5e06b90ac39
-RUN sonar-scanner   -Dsonar.projectKey=my_project_key   -Dsonar.sources=.   -Dsonar.host.url=   -Dsonar.login= || echo SonarQube analysis finished with issues 
 
+RUN sonar-scanner -Dsonar.projectKey=my_project_key -Dsonar.sources=. -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_LOGIN} || echo "SonarQube analysis finished with issues"
 
+# Step 2: Build the Maven project using Maven Wrapper (mvnw)
+FROM openjdk:17-jdk-slim AS build
 
-
-# Step 2: Build the Maven project
-# i have used so many versions of maven till I foung this one and it worked for me 
-FROM maven:3.8.6-eclipse-temurin-17 AS build
-# seting the workinf Dir 
+# Set the working directory for the application
 WORKDIR /app
-# copyied the source code to the container
+
+# Copy the application source code into the Docker image
 COPY . .
-RUN ./mvnw package
 
+# Ensure the Maven wrapper script has execute permissions
+RUN chmod +x ./mvnw
 
+# Install curl to check connectivity and perform health checks
+RUN apt-get update && apt-get install -y curl && curl -I https://repo.maven.apache.org/maven2/
 
-# Step 3: Create the final image with Java 8 and use the JAR file as CMD
-FROM openjdk:8-jdk-alpine
+# Run Maven Wrapper to build the package
+RUN ./mvnw -X clean package
+
+# Step 3: Create the final image with Java 17 and use the JAR file
+FROM openjdk:17-jdk-alpine
 WORKDIR /code
 
 # Copy the artifact from the Maven build (Step 2)
 COPY --from=build /app/target/*.jar /code/
-CMD [java, -jar, /code/*.jar]
 
+# Run the built JAR file
+CMD ["java", "-jar", "/code/*.jar"]
