@@ -29,13 +29,13 @@ RUN ./mvnw clean package -Dcheckstyle.skip=true
 
 # Step 3: Create the final image with Java 17 and use the JAR file
 FROM openjdk:17-jdk-alpine
-WORKDIR /code
+WORKDIR /app
 
 # Run the built JAR file
 #CMD ["java", "-jar", "/code/*.jar"]
 
 # Copy the artifact from the Maven build (Step 2)
-COPY --from=build /app/target/spring-petclinic*.jar /code/spring-petclinic.jar
+COPY --from=build /app/target/spring-petclinic*.jar /app/spring-petclinic.jar
 
 # Set the entrypoint command to run the application
 ENTRYPOINT ["java", "-jar", "/app/spring-petclinic.jar"]
