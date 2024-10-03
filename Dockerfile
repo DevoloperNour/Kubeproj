@@ -25,7 +25,10 @@ RUN chmod +x ./mvnw
 RUN apt-get update && apt-get install -y curl && curl -I https://repo.maven.apache.org/maven2/
 
 # Run Maven Wrapper to build the package
-RUN ./mvnw -X clean package
+RUN ./mvnw clean package
+
+# Copy the JAR file from the build context to the working directory
+COPY target/spring-petclinic.jar /app/spring-petclinic.jar
 
 # Step 3: Create the final image with Java 17 and use the JAR file
 FROM openjdk:17-jdk-alpine
@@ -33,9 +36,6 @@ WORKDIR /code
 
 # Copy the artifact from the Maven build (Step 2)
 COPY --from=build /app/target/*.jar /code/
-
-# Copy the JAR file from the build context to the working directory
-COPY target/spring-petclinic.jar /app/spring-petclinic.jar
 
 # Run the built JAR file
 #CMD ["java", "-jar", "/code/*.jar"]
