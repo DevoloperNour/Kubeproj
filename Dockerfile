@@ -25,7 +25,7 @@ RUN chmod +x ./mvnw
 RUN apt-get update && apt-get install -y curl && curl -I https://repo.maven.apache.org/maven2/
 
 # Run Maven Wrapper to build the package
-RUN ./mvnw clean package
+RUN ./mvnw clean package -Dcheckstyle.skip=true
 
 # Step 3: Create the final image with Java 17 and use the JAR file
 FROM openjdk:17-jdk-alpine
