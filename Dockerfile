@@ -34,8 +34,11 @@ WORKDIR /code
 # Copy the artifact from the Maven build (Step 2)
 COPY --from=build /app/target/*.jar /code/
 
+# Copy the JAR file from the build context to the working directory
+COPY target/spring-petclinic.jar /app/spring-petclinic.jar
+
 # Run the built JAR file
-CMD ["java", "-jar", "/code/*.jar"]
+#CMD ["java", "-jar", "/code/*.jar"]
 
 # Set the entrypoint command to run the application
 ENTRYPOINT ["java", "-jar", "/app/spring-petclinic.jar"]
