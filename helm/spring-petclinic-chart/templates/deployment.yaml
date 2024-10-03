@@ -20,4 +20,3 @@ spec:
           ports:
             - containerPort: 8080
           command: ["java", "-jar", "/app/spring-petclinic.jar"]
-#test
