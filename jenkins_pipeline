@@ -1,0 +1,58 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_CREDENTIALS_ID = 'git-pass'
+        DOCKERHUB_REPO = 'bshara745/spring-petclinic'
+        GIT_REPO = 'https://github.com/DevoloperNour/Kubeproj.git'
+        IMAGE_TAG = "v${env.BUILD_NUMBER}" // Versioning based on build number
+    }
+
+    stages {
+        stage('Checkout Code and Build Docker Image') {
+            steps {
+                script {
+                    echo 'Cloning the repository...'
+                    // Checkout the project from your Git repository
+                    git branch: 'master', url: "${env.GIT_REPO}"
+                    
+                    echo 'Building Docker image using Dockerfile...'
+                    // Build the Docker image using the Dockerfile
+                    sh """
+                        docker build --network=host -t ${DOCKERHUB_REPO}:${IMAGE_TAG} -t ${DOCKERHUB_REPO}:latest -f Dockerfile .
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'docker_usr', variable: 'DOCKER_USERNAME'), string(credentialsId: 'docker_access_token', variable: 'DOCKER_PASSWORD')]) {
+                        echo "Pushing Docker image ${DOCKERHUB_REPO}:${IMAGE_TAG} and latest to DockerHub..."
+                        sh """
+                            echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+                            docker push ${DOCKERHUB_REPO}:${IMAGE_TAG}
+                            docker push ${DOCKERHUB_REPO}:Latest
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up Docker images...'
+            // Forcefully remove the images even if they are in use by stopped containers
+            sh 'docker rmi $(docker images -f "dangling=true" -q) --force || true'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed. Please check logs.'
+        }
+    }
+}
+

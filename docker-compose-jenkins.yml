@@ -3,18 +3,22 @@ version: '3.8'
 services:
   # Jenkins Master
   jenkins-master:
-    image: jenkins/jenkins:lts
+    build:
+      context: .
+      dockerfile: dockerfile1
     container_name: jenkins-master
+    user: root  # Run Jenkins as root to access Docker
+    privileged: true  # Allow the Jenkins container more privileges to run Docker commands
     ports:
-      - "8080:8080"      # Jenkins Web UI
-      - "50000:50000"    # JNLP port for agents
+      - 8080:8080      # Jenkins Web UI
+      - 50000:50000    # JNLP port for agents
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock  # Allow Jenkins to run Docker builds
     environment:
       JENKINS_SLAVE_AGENT_PORT: 50000
 
-  # Jenkins Slave (Agent)
+  # Jenkins Agent (Slave)
   jenkins-agent:
     image: jenkins/inbound-agent
     container_name: jenkins-agent

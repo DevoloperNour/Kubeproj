@@ -1,0 +1,26 @@
+# Spring Petclinic Application Configurations
+image: "bshara745/spring-petclinic:Latest"
+label: "spring-petclinic"
+labelSelector: "spring-petclinic"
+deploymentName: "spring-petclinic-deployment"
+replicas: 2  
+
+# Service Configurations
+serviceType: "ClusterIP"
+
+# MySQL Database Configurations
+mysql:
+  image: "mysql:5.7"
+  label: "mysql"
+  labelSelector: "mysql"
+  deploymentName: "mysql-deployment"
+  replicas: 1  # Number of replicas for the MySQL database
+  rootPassword: "root"         # Change this to your desired password
+  user: "petclinic"
+  password: "petclinic"
+  database: "petclinic"
+
+# Service Ports
+service:
+  port: 80
+  targetPort: 8080
