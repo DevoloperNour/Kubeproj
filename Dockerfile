@@ -36,3 +36,6 @@ COPY --from=build /app/target/*.jar /code/
 
 # Run the built JAR file
 CMD ["java", "-jar", "/code/*.jar"]
+
+# Set the entrypoint command to run the application
+ENTRYPOINT ["java", "-jar", "/app/spring-petclinic.jar"]
