@@ -1,4 +1,4 @@
-# Spring Petclinic Application Configurations
+# Springpetclinic Application Configurations
 image: "bshara745/spring-petclinic:Latest"
 label: "spring-petclinic"
 labelSelector: "spring-petclinic"
@@ -14,8 +14,8 @@ mysql:
   label: "mysql"
   labelSelector: "mysql"
   deploymentName: "mysql-deployment"
-  replicas: 1  # Number of replicas for the MySQL database
-  rootPassword: "root"         # Change this to your desired password
+  replicas: 1  
+  rootPassword: "root"      
   user: "petclinic"
   password: "petclinic"
   database: "petclinic"
