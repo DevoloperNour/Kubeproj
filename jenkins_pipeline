@@ -44,14 +44,14 @@ pipeline {
     post {
         always {
             echo 'Cleaning up Docker images...'
-            // Forcefully remove the images even if they are in use by stopped containers
+            
             sh 'docker rmi $(docker images -f "dangling=true" -q) --force || true'
         }
         success {
-            echo 'Pipeline completed successfully.'
+            echo ' successfully.'
         }
         failure {
-            echo 'Pipeline failed. Please check logs.'
+            echo 'failed. Please check logs.'
         }
     }
 }
